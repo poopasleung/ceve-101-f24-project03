@@ -11,7 +11,6 @@ format:
 ---
 
 
-We begin by loading the required packages.
 
 ```{julia}
 using Revise                      # <1>
@@ -23,20 +22,14 @@ using RainwaterHarvesting         # <2>
 
 ### Setting the file path
 
-Next, we specify the path to the rainfall data file and read it in.
-
 ```{julia}
-filepath = "data/90.txt" # <1>   
+filepath = "data/79.txt" # <1>   
 rainfall_data = RainfallData(filepath) # <2>
 ```
 
 1. This is the path to the rainfall data file for the station of interest.
 2. This creates a `RainfallData` object containing the rainfall data for the specified station.
 
-If we dig under the hood a bit, we can see that there are two main pieces of information:
-
-- `station_info`: a dictionary containing information about the station, such as its name and location.
-- `annual_data`: a dictionary mapping years to `AnnualRainfallData` objects, each containing the date and precipitation data for a given year.
 
 ### Plotting the Data
 
@@ -50,56 +43,19 @@ plot(rainfall_data) # <1>
 
 ### Discussion
 
-*Insert discussion here*
+The remaining data after data cleaning is sufficient. There is a lot of data for Jucas with a range of around 50 years, so it is likely to capture years with droughts. In Ceará, the largest droughts occured during the years 1877–1879, 1915, 1931, 1973, 1983, 1993, 1998, and 2012-2018. The droughts that fall under the data range for Jucas should are in the years 1983, 1993, 1998, and 2012-2018. Areas in the data plot that have missing gaps of data are indicative of a drought. In Jucas, there were several gaps in 1983 and 1998, and a large gap of data starting in 2013, which were all years with major droughts in Ceará. However, there is no significant gap in the data during the drought year of 1993, meaning that while the state of Ceará recieved less rain overall, Jucas did not.
 
 ## Understanding the Theoretical Model
 
-Let's explore the model that simulates the rainwater harvesting system.
-
-### Mass Balance Equation
-
-The mass balance model for the rainwater tank is given by:
-
-$$
-V_{t+1} = V_t + Q_t - C_t | 0 \leq V_t \leq V_\text{max}
-$$
-
-- $V_t$: the volume of water in the tank at time $t$
-- $Q_t$ is the volume of water added to the tank at time $t$
-- $C_t$ is the volume of water consumed at time $t$
-- $V_\text{max}$: the maximum volume of the tank
-
-### Inflow ($Q_t$)
-
-Inflow is calculated as
-
-$$
-Q_t = \eta \times A \times \max(P_t - F, 0).
-$$
-
-- $\eta$: the runoff coefficient, which accounts for losses due to evaporation, spilling, etc.
-- $A$: the area of the roof (we will use square meters)
-- $P_t$: the precipitation at time $t$ (we will use millimeters per day)
-- $F$: the first flush volume (we will use millimeters). The first flush volume is often discarded, so that each time it rains the first bit of water (which is usually dirty) is not used (see [here](https://rainwaterharvesting.tamu.edu/pre-storage-treatment/) for more details).
-
-### Consumption
-
-Consumption is modeled as:
-
-$$
-C_t = \begin{cases}
-    74.1 & \quad \text{day of year} > 150 \\
-    0 & \quad \text{day of year} \leq 150
-\end{cases}
-$$
-
-This makes two major assumptiuons.
-First, the household begins using water from the tank after the 150th day of the year.
-This is based on the idea that the rainy season lasts for about the first 150 days of the year, and so they may have other sources of water before then.
-The second assumption is that each household consumes 74.1 liters per day during the dry season.
-How does this compare to your household's water usage?
+The major assumptions in the model have to do with consumption of the water. It assumes that for every year, water begins being consumed after 150 days at a rate of 74.1 liters per day per household. While 74.1 liters per household is a reasonable approximation for an average, assuming that consumption starts 150 days into the year every year is unlikely to give accurate results, since it it varies per year. To relax these uncertainties, it is best to survey households in the city of Jucas, rather than use generalized data from Ceará. Then, use the survey data in the mathematical model instead of the data from Ceará. Adding a margin of error to the model would also be useful for analysis. 
 
 ## Model Implementation and Testing
+
+I cut the roof area in half from 45.0 m^2 to 35.0 m^2 and kept the capacity constant L to see how big of an impact a smaller collection system would have. With an area of 45.0 m^2, only 3 of the 45 years experienced failures, but decreasing the area to 35.0 m^2 made it so 28 of 45 years experienced failures. 
+
+The decrease in tank collection area lowered its reliability from 93.3% to 37.8%.
+
+An assumption the current model makes is that throughout the dry season, households use the same amount of water every day. What  might be more likely is that the amount of water used per day decreases as people notice the water in the tank is running out. To address this, the amount of water consumption would have to be surveyed and compared to the amount of water in the tank at several points during the dry season. If there is a relationship, the mathematical model should treat water consumption as a function of the water in the tank instead of a constant. This will improve the accuracy of the model by reducing assumptions.
 
 ### Defining the Model Parameters
 
@@ -110,7 +66,7 @@ You will have the opportunity to change these values later.
 #| output: false
 param = ModelParameters(          # <1>
     runoff_coefficient=0.85,      # <2>
-    roof_area_m2=45.0,            # <3>
+    roof_area_m2=22.5,            # <3>
     first_flush_mm=2.0,           # <4>
     tank_capacity_L=16000.0       # <5>
 )
